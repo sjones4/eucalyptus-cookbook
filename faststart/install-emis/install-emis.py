@@ -405,7 +405,7 @@ def exit_message():
 def main():
     parser = argparse.ArgumentParser(description='Process Arguments.')
     parser.add_argument('-c', '--catalog',
-                        default="https://raw.githubusercontent.com/shaon/scripts/master/catalog-web",
+                        default="https://raw.githubusercontent.com/eucalyptus/eucalyptus-cookbook/master/faststart/install-emis/image-catalog.json",
                         help='Image catalog json file')
     args = parser.parse_args()
 
