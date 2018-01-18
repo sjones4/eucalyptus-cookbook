@@ -91,7 +91,7 @@ bridged_nic_bootproto = `cat #{bridged_nic_file} | grep BOOTPROTO | awk -F'=' '{
 Chef::Log.info "Using BOOTPROTO \"#{bridged_nic_bootproto}\""
 
 if node["eucalyptus"]["network"]["mode"] == "VPCMIDO"
-  if "#{bridged_nic_bootproto}" == "static"
+  if "#{bridged_nic_bootproto}" == "static" or "#{bridged_nic_bootproto}" == "none"
     template bridge_file do
       source "ifcfg-br-static-vpcmido.erb"
       mode 0644
@@ -107,7 +107,7 @@ if node["eucalyptus"]["network"]["mode"] == "VPCMIDO"
     end
   end
 else
-  if "#{bridged_nic_bootproto}" == "static"
+  if "#{bridged_nic_bootproto}" == "static" or "#{bridged_nic_bootproto}" == "none"
     template bridge_file do
       source "ifcfg-br-static.erb"
       mode 0644
@@ -139,6 +139,26 @@ if node["eucalyptus"]["network"]["mode"] != "VPCMIDO"
   execute "Set device name in bridge file" do
     command "sed -i 's/DEVICE.*/DEVICE=#{bridge_interface}/g' #{bridge_file}"
     not_if "grep 'DEVICE=#{bridge_interface}' #{bridge_file}"
+  end
+
+  execute "Set ip address in bridge file" do
+    command "grep IPADDR= #{bridged_nic_file} | xargs -r -n 1 -I NEWADDR sed -i 's/IPADDR=.*/NEWADDR/' #{bridge_file}"
+    not_if "grep 'IPADDR=[0-9]' #{bridge_file}"
+  end
+
+  execute "Set netmask in bridge file" do
+    command "grep NETMASK= #{bridged_nic_file} | xargs -r -n 1 -I NEWNETMASK sed -i 's/NETMASK=.*/NEWNETMASK/' #{bridge_file}"
+    not_if "grep 'NETMASK=[0-9]' #{bridge_file}"
+  end
+
+  execute "Set gateway in bridge file" do
+    command "grep GATEWAY= #{bridged_nic_file} | xargs -r -n 1 -I NEWGATEWAY sed -i 's/GATEWAY=.*/NEWGATEWAY/' #{bridge_file}"
+    not_if "grep 'GATEWAY=[0-9]' #{bridge_file}"
+  end
+
+  execute "Clear gateway in bridge file" do
+    command "sed -i 's/GATEWAY=.*//' #{bridge_file}"
+    not_if "grep 'GATEWAY=[0-9]' #{bridge_file}"
   end
 
   template bridged_nic_file do
