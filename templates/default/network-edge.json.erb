@@ -1,14 +1,19 @@
 {
-  "Clusters": <%= @clusters %>,
+  "Mode": "EDGE"<% if @instanceDnsServers -%>,
   "InstanceDnsServers": [
   <% @instanceDnsServers.each_with_index do |value, index| -%>
     "<%= value %>"<%= "," unless @instanceDnsServers.size == index + 1 %>
-  <% end %>
-  ],
-  "Mode": "EDGE",
+  <% end %>]<% end %><% if @publicIps -%>,
   "PublicIps": [
   <% @publicIps.each_with_index do |value, index| -%>
     "<%= value %>"<%= "," unless @publicIps.size == index + 1 %>
+  <% end %>]<% end %><% if @privateIps -%>,
+  "PrivateIps": [
+  <% @privateIps.each_with_index do |value, index| -%>
+    "<%= value %>"<%= "," unless @privateIps.size == index + 1 %>
+  <% end %>]<% end %><% if @clusters -%>,
+  "Clusters": <%= @clusters %>
+  <% end %><% if @subnets -%>,
+  "Subnets": <%= @subnets %>
   <% end %>
-  ]
 }
