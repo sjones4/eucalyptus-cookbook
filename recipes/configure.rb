@@ -284,9 +284,11 @@ template "create network.json for EDGE" do
   source "network-edge.json.erb"
   action :create
   variables(
-    :clusters => Chef::JSONCompat.to_json_pretty(node["eucalyptus"]["network"]["clusters"]),
     :instanceDnsServers => node["eucalyptus"]["network"]["InstanceDnsServers"],
-    :publicIps => node["eucalyptus"]["network"]["PublicIps"]
+    :publicIps => node["eucalyptus"]["network"]["PublicIps"],
+    :privateIps => node["eucalyptus"]["network"]["PrivateIps"],
+    :clusters => node["eucalyptus"]["network"]["clusters"] ? Chef::JSONCompat.to_json_pretty(node["eucalyptus"]["network"]["clusters"]) : nil,
+    :subnets => node["eucalyptus"]["network"]["subnets"] ? Chef::JSONCompat.to_json_pretty(node["eucalyptus"]["network"]["subnets"]) : nil
   )
   only_if { node['eucalyptus']['network']['mode'] == 'EDGE' }
 end
