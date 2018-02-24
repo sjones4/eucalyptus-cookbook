@@ -10,8 +10,8 @@
     "<%= value %>"<%= "," unless @instanceDnsServers.size == index + 1 %>
   <% end %>
   ],
-  "Mido": {
-    "BgpAsn": <%= @bgpasn %>,
+  "Mido": {<% if @bgpasn -%>
+    "BgpAsn": <%= @bgpasn %>,<% end %>
     "Gateways": <%= @mygateways %>
   }
 }
