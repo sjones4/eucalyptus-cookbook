@@ -7,7 +7,6 @@ OPTIND=1  # Reset in case getopts has been used previously in the shell.
 # Initialize our own variables:
 cookbooks_url="https://downloads.eucalyptus.cloud/software/eucalyptus/eucalyptus-cookbooks-4.4-4.tgz"
 nc_install_only=0
-wildcard_dns="nip.io"
 
 function usage
 {
@@ -507,15 +506,16 @@ done
 echo "IPADDR="$ciab_ipaddr
 echo ""
 
-echo "Using $wildcard_dns for wildcard dns." >>$LOGFILE
-/usr/bin/ping -c 1 $ciab_ipaddr.$wildcard_dns 2>&1 >>$LOGFILE
+echo "Using euca.me for wildcard dns." >>$LOGFILE
+CIAB_EC2_ENDPOINT=ec2.${ciab_ipaddr//\./-}.euca.me
+/usr/bin/ping -c 1 $CIAB_EC2_ENDPOINT 2>&1 >>$LOGFILE
 if [[ $? != 0 ]]; then
-    echo "Cannot resolve $ciab_ipaddr.$wildcard_dns!  We require network
-    connectivity to $wildcard_dns for FastStart service DNS resolution.
+    echo "Cannot resolve $CIAB_EC2_ENDPOINT!  We require network
+    connectivity to euca.me for FastStart service DNS resolution.
     Please verify your network connectivity is functioning properly and attempt
-    your FastStart install again."
-    echo "Cannot resolve $ciab_ipaddr.$wildcard_dns!  We require network
-    connectivity to $wildcard_dns for FastStart service DNS resolution.
+    your FastStart install again." 
+    echo "Cannot resolve $CIAB_EC2_ENDPOINT!  We require network
+    connectivity to euca.me for FastStart service DNS resolution.
     Please verify your network connectivity is functioning properly and attempt
     your FastStart install again." >>$LOGFILE
     exit 1
@@ -686,6 +686,7 @@ else
 fi
 
 # Perform variable interpolation in the proper template.
+sed -i "s/IPADDR.WILDCARD-DNS/${ciab_ipaddr//\./-}.euca.me/g" $chef_template
 sed -i "s/IPADDR/$ciab_ipaddr/g" $chef_template
 sed -i "s/NETMASK/$ciab_netmask/g" $chef_template
 sed -i "s/GATEWAY/$ciab_gateway/g" $chef_template
@@ -697,7 +698,6 @@ sed -i "s/PRIVATEIPS2/$ciab_privateips2/g" $chef_template
 sed -i "s/EXTRASERVICES/$ciab_extraservices/g" $chef_template
 sed -i "s/NIC/$ciab_nic/g" $chef_template
 sed -i "s/NTP/$ciab_ntp/g" $chef_template
-sed -i "s/WILDCARD-DNS/$wildcard_dns/g" $chef_template
 
 if [ "$ciab_bridge_primary" -eq 1 ]; then
     echo ""
