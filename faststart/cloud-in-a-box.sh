@@ -5,7 +5,7 @@
 OPTIND=1  # Reset in case getopts has been used previously in the shell.
 
 # Initialize our own variables:
-cookbooks_url="https://downloads.eucalyptuscloud.org/software/eucalyptus/eucalyptus-cookbooks-4.4-2.tgz"
+cookbooks_url="https://downloads.eucalyptus.cloud/software/eucalyptus/eucalyptus-cookbooks-4.4-3.tgz"
 nc_install_only=0
 wildcard_dns="nip.io"
 

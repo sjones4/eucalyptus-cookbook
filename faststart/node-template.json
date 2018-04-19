@@ -1,7 +1,7 @@
 {
     "eucalyptus": {
-      "eucalyptus-repo": "https://downloads.eucalyptuscloud.org/software/eucalyptus/4.4/rhel/7/x86_64/",
-      "euca2ools-repo": "http://downloads.eucalyptuscloud.org/software/euca2ools/3.4/rhel/7/x86_64/",
+      "eucalyptus-repo": "http://downloads.eucalyptus.cloud/software/eucalyptus/4.4/rhel/7/x86_64/",
+      "euca2ools-repo": "http://downloads.eucalyptus.cloud/software/euca2ools/3.4/rhel/7/x86_64/",
       "ntp-server": "NTP",
       "network": {
         "mode": "EDGE",
