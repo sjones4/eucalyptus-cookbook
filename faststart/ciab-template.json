@@ -1,5 +1,6 @@
 {
     "eucalyptus": {
+      "yum-options": "--nogpg",
       "cloud-properties": {
           "authentication.access_keys_limit": 10,
           "authentication.signing_certificates_limit": 10
