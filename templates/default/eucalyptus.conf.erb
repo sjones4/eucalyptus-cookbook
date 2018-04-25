@@ -22,6 +22,12 @@ NC_CACHE_SIZE=<%= node["eucalyptus"]["nc"]["cache-size"] %>
 HYPERVISOR="<%= node["eucalyptus"]["nc"]["hypervisor"] %>"
 MAX_CORES="<%= node["eucalyptus"]["nc"]["max-cores"] %>"
 INSTANCE_PATH="<%= node["eucalyptus"]["nc"]["instance-path"] %>"
+<% if node["eucalyptus"]["nc"]["use-cpu-passthrough"] -%>
+USE_CPU_PASSTHROUGH="<%= node["eucalyptus"]["nc"]["use-cpu-passthrough"] %>"
+<% end -%>
+<% if node["eucalyptus"]["nc"]["libvirt-use-policy-kit"] -%>
+LIBVIRT_USE_POLICY_KIT="<%= node["eucalyptus"]["nc"]["libvirt-use-policy-kit"] %>"
+<% end -%>
 USE_VIRTIO_ROOT="1"
 USE_VIRTIO_DISK="1"
 USE_VIRTIO_NET="1"
