@@ -66,6 +66,7 @@ default["eucalyptus"]["compile-timeout"] = 7200
 default["eucalyptus"]["network"]["metadata-use-private-ip"] = "N"
 default["eucalyptus"]["network"]["metadata-ip"] = ""
 default["eucalyptus"]["network"]["nc-router"] = ""
+default["eucalyptus"]["network"]["nc-router-ip"] = ""
 default["eucalyptus"]["network"]["mode"] = "MANAGED-NOVLAN"
 
 ### System properties
