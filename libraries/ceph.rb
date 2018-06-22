@@ -45,6 +45,14 @@ module CephHelper
       end
     end
 
+    def self.is_install_ceph_radosgw?(node)
+      if self.is_ceph_radosgw?(node)
+        return node['eucalyptus']['ceph-keyrings'] && node['eucalyptus']['ceph-keyrings']['radosgw']
+      else
+        return false
+      end
+    end
+
     def self.make_ceph_config(node, ceph_user)
       if node['ceph'] != nil
         mons = node['ceph']['topology']['mons']

@@ -1,17 +1,15 @@
 {
-  "Mode": "VPCMIDO",
-  "PublicIps": [
-  <% @publicIps.each_with_index do |value, index| -%>
-    "<%= value %>"<%= "," unless @publicIps.size == index + 1 %>
-  <% end %>
-  ],
+  "Mode": "VPCMIDO"<% if @instanceDnsServers -%>,
   "InstanceDnsServers": [
   <% @instanceDnsServers.each_with_index do |value, index| -%>
     "<%= value %>"<%= "," unless @instanceDnsServers.size == index + 1 %>
-  <% end %>
-  ],
-  "Mido": {
-    "BgpAsn": <%= @bgpasn %>,
+  <% end %>]<% end %><% if @publicIps -%>,
+  "PublicIps": [
+  <% @publicIps.each_with_index do |value, index| -%>
+    "<%= value %>"<%= "," unless @publicIps.size == index + 1 %>
+  <% end %>]<% end %>,
+  "Mido": {<% if @bgpasn -%>
+    "BgpAsn": <%= @bgpasn %>,<% end %>
     "Gateways": <%= @mygateways %>
   }
 }

@@ -66,6 +66,7 @@ default["eucalyptus"]["compile-timeout"] = 7200
 default["eucalyptus"]["network"]["metadata-use-private-ip"] = "N"
 default["eucalyptus"]["network"]["metadata-ip"] = ""
 default["eucalyptus"]["network"]["nc-router"] = ""
+default["eucalyptus"]["network"]["nc-router-ip"] = ""
 default["eucalyptus"]["network"]["mode"] = "MANAGED-NOVLAN"
 
 ### System properties
@@ -130,6 +131,8 @@ default["eucalyptus"]["nc"]["hypervisor"] = "kvm"
 default["eucalyptus"]["nc"]["max-cores"] = "0"
 default["eucalyptus"]["nc"]["instance-path"] = "/var/lib/eucalyptus/instances"
 default["eucalyptus"]["nc"]["ipset-maxsets"] = "2048"
+#default["eucalyptus"]["nc"]["libvirt-use-policy-kit"] = "0"
+#default["eucalyptus"]["nc"]["use-cpu-passthrough"] = "0"
 
 # Ceph Packages
 default['eucalyptus']['ceph-repo'] = "http://download.ceph.com/rpm-hammer/el7/x86_64/"
