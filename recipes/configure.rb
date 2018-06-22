@@ -357,6 +357,16 @@ clusters.each do |cluster, info|
   end
 end
 
+### Set cloud properties
+node['eucalyptus']['cloud-properties'].each do |key, value|
+  execute "#{euctl} #{key}=\"#{value}\"" do
+    retries 10
+    retry_delay 5
+    not_if "#{euctl} #{key} | grep \"#{value}\""
+  end
+end
+
+
 ### Register Service Image
 yum_repository "eucalyptus-service-image" do
   description "Eucalyptus Service Image Repo"
@@ -433,14 +443,6 @@ execute "create_imaging_worker" do
   command "#{as_admin} esi-manage-stack --region localhost -a create imaging"
   only_if "#{euctl} services.imaging.worker.configured | grep 'false'"
   only_if { node['eucalyptus']['install-service-image'] }
-end
-
-node['eucalyptus']['cloud-properties'].each do |key, value|
-  execute "#{euctl} #{key}=\"#{value}\"" do
-    retries 10
-    retry_delay 5
-    not_if "#{euctl} #{key} | grep \"#{value}\""
-  end
 end
 
 if node['eucalyptus']['network']['mode'] == 'VPCMIDO'
