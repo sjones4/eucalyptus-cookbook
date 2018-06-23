@@ -636,7 +636,7 @@ if [ "$?" != "0" ]; then
     echo "[INFO] Chef not found. Installing Chef Client"
     echo ""
     echo ""
-    curl --insecure -L https://omnitruck.chef.io/install.sh | bash -s -- -P chefdk 1>>$LOGFILE
+    curl -L https://omnitruck.chef.io/install.sh | bash -s -- -P chefdk -v 2.5 1>>$LOGFILE
     if [ "$?" != "0" ]; then
         echo "====="
         echo "[FATAL] Chef install failed!"
