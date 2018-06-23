@@ -18,8 +18,8 @@ default['eucalyptus']['rm-source-dir'] = false
 default["eucalyptus"]["eucalyptus-repo"] = "http://downloads.eucalyptus.com/software/eucalyptus/nightly/devel/rhel/$releasever/$basearch/"
 default["eucalyptus"]["euca2ools-repo"] = "http://downloads.eucalyptus.com/software/euca2ools/nightly/devel/rhel/$releasever/$basearch/"
 default["eucalyptus"]["enterprise-repo"] = ""
-default["eucalyptus"]["eucalyptus-gpg-key"] = "http://downloads.eucalyptus.com/software/gpg/eucalyptus-release-key.pub"
-default["eucalyptus"]["euca2ools-gpg-key"] = "http://downloads.eucalyptus.com/software/gpg/eucalyptus-release-key.pub"
+default["eucalyptus"]["eucalyptus-gpg-key"] = "https://downloads.eucalyptus.cloud/software/gpg/eucalyptus-release-key.pub https://downloads.eucalyptus.cloud/software/gpg/eucalyptus-release-as-key.pub"
+default["eucalyptus"]["euca2ools-gpg-key"] = "https://downloads.eucalyptus.cloud/software/gpg/eucalyptus-release-key.pub"
 default['eucalyptus']['clientcert'] = "insertclientcerthere"
 default['eucalyptus']['clientkey'] = "insertclientkeyhere"
 default['eucalyptus']['enterprise']['sslverify'] = true
@@ -66,6 +66,7 @@ default["eucalyptus"]["compile-timeout"] = 7200
 default["eucalyptus"]["network"]["metadata-use-private-ip"] = "N"
 default["eucalyptus"]["network"]["metadata-ip"] = ""
 default["eucalyptus"]["network"]["nc-router"] = ""
+default["eucalyptus"]["network"]["nc-router-ip"] = ""
 default["eucalyptus"]["network"]["mode"] = "MANAGED-NOVLAN"
 
 ### System properties
@@ -130,6 +131,8 @@ default["eucalyptus"]["nc"]["hypervisor"] = "kvm"
 default["eucalyptus"]["nc"]["max-cores"] = "0"
 default["eucalyptus"]["nc"]["instance-path"] = "/var/lib/eucalyptus/instances"
 default["eucalyptus"]["nc"]["ipset-maxsets"] = "2048"
+#default["eucalyptus"]["nc"]["libvirt-use-policy-kit"] = "0"
+#default["eucalyptus"]["nc"]["use-cpu-passthrough"] = "0"
 
 # Ceph Packages
 default['eucalyptus']['ceph-repo'] = "http://download.ceph.com/rpm-hammer/el7/x86_64/"
