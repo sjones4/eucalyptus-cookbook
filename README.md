@@ -165,7 +165,6 @@ top level eucalyptus-cookbook directory, execute:
 
     faststart/cloud-in-a-box.sh
     
-
 Once invoked the script does the following:
 
 1. Checks for necessary resources on the machine that it is installing on (ie disk, memory, virtualization extensions)
