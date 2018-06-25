@@ -284,9 +284,11 @@ template "create network.json for EDGE" do
   source "network-edge.json.erb"
   action :create
   variables(
-    :clusters => Chef::JSONCompat.to_json_pretty(node["eucalyptus"]["network"]["clusters"]),
     :instanceDnsServers => node["eucalyptus"]["network"]["InstanceDnsServers"],
-    :publicIps => node["eucalyptus"]["network"]["PublicIps"]
+    :publicIps => node["eucalyptus"]["network"]["PublicIps"],
+    :privateIps => node["eucalyptus"]["network"]["PrivateIps"],
+    :clusters => node["eucalyptus"]["network"]["clusters"] ? Chef::JSONCompat.to_json_pretty(node["eucalyptus"]["network"]["clusters"]) : nil,
+    :subnets => node["eucalyptus"]["network"]["subnets"] ? Chef::JSONCompat.to_json_pretty(node["eucalyptus"]["network"]["subnets"]) : nil
   )
   only_if { node['eucalyptus']['network']['mode'] == 'EDGE' }
 end
@@ -354,6 +356,16 @@ clusters.each do |cluster, info|
     end
   end
 end
+
+### Set cloud properties
+node['eucalyptus']['cloud-properties'].each do |key, value|
+  execute "#{euctl} #{key}=\"#{value}\"" do
+    retries 10
+    retry_delay 5
+    not_if "#{euctl} #{key} | grep \"#{value}\""
+  end
+end
+
 
 ### Register Service Image
 yum_repository "eucalyptus-service-image" do
@@ -431,14 +443,6 @@ execute "create_imaging_worker" do
   command "#{as_admin} esi-manage-stack --region localhost -a create imaging"
   only_if "#{euctl} services.imaging.worker.configured | grep 'false'"
   only_if { node['eucalyptus']['install-service-image'] }
-end
-
-node['eucalyptus']['cloud-properties'].each do |key, value|
-  execute "#{euctl} #{key}=\"#{value}\"" do
-    retries 10
-    retry_delay 5
-    not_if "#{euctl} #{key} | grep \"#{value}\""
-  end
 end
 
 if node['eucalyptus']['network']['mode'] == 'VPCMIDO'
