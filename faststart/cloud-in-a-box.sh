@@ -5,7 +5,7 @@
 OPTIND=1  # Reset in case getopts has been used previously in the shell.
 
 # Initialize our own variables:
-
+cookbooks_url="https://downloads.eucalyptus.cloud/software/eucalyptus/eucalyptus-cookbooks-4.4-5.tgz"
 nc_install_only=0
 wildcard_dns="nip.io"
 
@@ -440,13 +440,13 @@ ciab_netmask_cidr=`ip addr show $active_nic | grep 'inet' | grep -v 'inet6' | aw
 if [ "$ciab_netmask_cidr" -eq 16 ]; then
   ciab_netmask_guess="255.255.0.0"
 elif [ "$ciab_netmask_cidr" -eq 20 ]; then
-  ciab_netmask_guess="255.255.240.0"  
+  ciab_netmask_guess="255.255.240.0"
 elif [ "$ciab_netmask_cidr" -eq 21 ]; then
   ciab_netmask_guess="255.255.248.0"
 elif [ "$ciab_netmask_cidr" -eq 22 ]; then
   ciab_netmask_guess="255.255.252.0"
 elif [ "$ciab_netmask_cidr" -eq 23 ]; then
-  ciab_netmask_guess="255.255.254.0"  
+  ciab_netmask_guess="255.255.254.0"
 elif [ "$ciab_netmask_cidr" -eq 24 ]; then
   ciab_netmask_guess="255.255.255.0"
 elif [ "$ciab_netmask_cidr" -eq 25 ]; then
@@ -636,7 +636,7 @@ if [ "$?" != "0" ]; then
     echo "[INFO] Chef not found. Installing Chef Client"
     echo ""
     echo ""
-    curl --insecure -L https://omnitruck.chef.io/install.sh | bash -s -- -P chefdk 1>>$LOGFILE
+    curl -L https://omnitruck.chef.io/install.sh | bash -s -- -P chefdk -v 2.5 1>>$LOGFILE
     if [ "$?" != "0" ]; then
         echo "====="
         echo "[FATAL] Chef install failed!"
@@ -652,6 +652,8 @@ echo "[Chef] Removing old Chef templates"
 # Get rid of old Chef stuff lying about.
 rm -rf /var/chef/* 1>>$LOGFILE
 
+echo "[Chef] Downloading necessary cookbooks"
+echo "[Chef] Downloading necessary cookbooks from URL: $cookbooks_url" >> $LOGFILE
 # Grab cookbooks from git
 yum install -y git 1>>$LOGFILE
 if [ "$?" != "0" ]; then
@@ -661,12 +663,15 @@ if [ "$?" != "0" ]; then
         echo "Failed to install git. See $LOGFILE for details."
         exit 25
 fi
-
-echo "[Chef] Running \"berks package\" to bundle all dependencies"
-echo "[Chef] Running \"berks package\" to bundle all dependencies" >> $LOGFILE
-
-berks package cookbooks.tgz 1>>$LOGFILE 2>&1
+if [ -z "${cookbooks_url}" ] || [ "${cookbooks_url}" == "none" ] ; then
+  echo "[Chef] Running \"berks package\" to bundle all dependencies"
+  echo "[Chef] Running \"berks package\" to bundle all dependencies" >> $LOGFILE
+  berks package cookbooks.tgz 1>>$LOGFILE 2>&1
+fi
 rm -rf cookbooks
+if [ ! -z "${cookbooks_url}" ] && [ "${cookbooks_url}" != "none" ] ; then
+    curl $cookbooks_url > cookbooks.tgz
+fi
 tar zxfv cookbooks.tgz
 
 # Copy the templates to the local directory

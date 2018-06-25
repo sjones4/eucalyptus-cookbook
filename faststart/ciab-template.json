@@ -1,16 +1,14 @@
 {
     "eucalyptus": {
-      "yum-options": "--nogpg",
-      "cloud-properties": {},
-      "eucalyptus-repo": "http://downloads-cdn0.eucalyptus.com/software/eucalyptus/4.4/rhel/7/x86_64/",
-      "euca2ools-repo": "http://downloads-cdn0.eucalyptus.com/software/euca2ools/3.4/rhel/7/x86_64/",
+      "yum-options": "",
+      "cloud-properties": {
+          "authentication.access_keys_limit": 10,
+          "authentication.signing_certificates_limit": 10
+      },
+      "eucalyptus-repo": "http://downloads.eucalyptus.cloud/software/eucalyptus/4.4/rhel/7/x86_64/",
+      "euca2ools-repo": "http://downloads.eucalyptus.cloud/software/euca2ools/3.4/rhel/7/x86_64/",
       "install-service-image": EXTRASERVICES,
       "ntp-server": "NTP",
-      "system-properties": {
-          "authentication.access_keys_limit": 10,
-          "authentication.signing_certificates_limit": 10,
-          "authentication.credential_download_generate_certificate": "Limited"
-      },
       "dns-domain": "IPADDR.WILDCARD-DNS",
       "set-bind-addr": true,
       "bind-interface": "BINDINTERFACE",
@@ -41,15 +39,12 @@
         "bridge-gateway": "GATEWAY",
         "InstanceDnsServers": ["IPADDR"],
         "PublicIps": ["PUBLICIPS1-PUBLICIPS2"],
-        "clusters": [
+        "PrivateIps": ["PRIVATEIPS1-PRIVATEIPS2"],
+        "subnets": [
           {
-            "Name": "default",
-            "Subnet": {
               "Subnet": "SUBNET",
               "Netmask": "NETMASK",
               "Gateway": "GATEWAY"
-            },
-            "PrivateIps": ["PRIVATEIPS1-PRIVATEIPS2"]
           }
         ]
       }
