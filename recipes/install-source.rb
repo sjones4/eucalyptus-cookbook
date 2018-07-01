@@ -32,7 +32,7 @@ end
 
 ### Create eucalyptus user
 user "eucalyptus" do
-  supports :manage_home => true
+  manage_home true
   comment "Eucalyptus cloud"
   home "/var/lib/eucalyptus"
   system true
