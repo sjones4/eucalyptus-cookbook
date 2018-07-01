@@ -144,7 +144,7 @@ end
 if node['eucalyptus']['install-type'] == 'sources'
   ### Remove eucalyptus user
   user 'eucalyptus' do
-    supports :manage_home => true
+    manage_home true
     comment 'Eucalyptus User'
     home '/home/eucalyptus'
     shell '/bin/bash'
