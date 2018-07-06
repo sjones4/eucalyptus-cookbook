@@ -221,14 +221,12 @@ fi
 
 # Check to see that we're running on CentOS or RHEL and the right version.
 echo "[Precheck] Checking OS"
-cat /etc/redhat-release | egrep 'release.*7.[34]' 1>>$LOGFILE
+cat /etc/redhat-release | egrep 'release.*7.[345]' 1>>$LOGFILE
 if [ "$?" != "0" ]; then
     echo "======"
     echo "[FATAL] Operating system not supported"
     echo ""
-    echo "Please note: Eucalyptus Faststart only runs on RHEL or CentOS 7.2 or 7.3"
-    echo "To try Faststart on another platform, consider trying Eucadev:"
-    echo "https://github.com/eucalyptus/eucalyptus-cookbook/blob/master/eucadev.md"
+    echo "Please note: Eucalyptus Faststart only runs on RHEL or CentOS 7.3-7.5"
     echo ""
     echo ""
     exit 10
