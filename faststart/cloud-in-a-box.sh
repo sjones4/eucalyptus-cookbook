@@ -949,11 +949,33 @@ if [ "$nc_install_only" == "0" ]; then
 #
 
     echo ""
-    echo "[Config] Generating credentials"
+    echo "[Config] Configuring HTTPS certificate for services"
+    euctl euca='
+import com.eucalyptus.component.auth.SystemCredentials
+import edu.ucsb.eucalyptus.cloud.entities.SystemConfiguration
+import com.eucalyptus.crypto.Certs
+import com.eucalyptus.crypto.util.PEMFiles
+import com.eucalyptus.configurable.PropertyDirectory
+import java.security.cert.X509Certificate
+import java.security.KeyPair
 
+String domain = SystemConfiguration.systemConfiguration.dnsDomain
+Set<String> altNames = [
+    "*.${domain}" as String,
+    "*.s3.${domain}" as String,
+    "*.internal" as String] as LinkedHashSet<String>
+KeyPair keyPair = Certs.generateKeyPair()
+X509Certificate cert = Certs.generateServiceCertificate(keyPair, "*.${domain}" as String, altNames)
+SystemCredentials.keyStore.addKeyPair("services", cert, keyPair.getPrivate(), "" as String)
+PropertyDirectory.getPropertyEntry("bootstrap.webservices.ssl.server_alias").value = "services"
+new String( PEMFiles.getBytes( cert ) )
+' > "/var/lib/eucalyptus/keys/services-cert.pem"
+    chown eucalyptus.eucalyptus "/var/lib/eucalyptus/keys/services-cert.pem"
+
+    CONPASS="$(stdbuf -o0 tr -dc a-z0-9 < /dev/urandom | head -c 8)"
     echo ""
     echo "[Config] Enabling web console"
-    euare-useraddloginprofile --as-account eucalyptus -u admin -p password
+    euare-useraddloginprofile --as-account eucalyptus -u admin -p $CONPASS
 
     echo "[Config] Adding ssh and http to default security group"
     euca-authorize -P tcp -p 22 default
@@ -983,7 +1005,7 @@ https://${ciab_ipaddr}/
 Default User Credentials (unless changed):
   * Account: eucalyptus
   * Username: admin
-  * Password: password
+  * Password: $CONPASS
 
 Eucalyptus CLI Tutorials can be found at:
 
@@ -997,7 +1019,7 @@ EOF
     echo "User Credentials:"
     echo "  * Account: eucalyptus"
     echo "  * Username: admin"
-    echo "  * Password: password"
+    echo "  * Password: $CONPASS"
     echo ""
 
     echo "If you are new to Eucalyptus, we strongly recommend that you run"
