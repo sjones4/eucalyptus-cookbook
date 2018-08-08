@@ -115,6 +115,7 @@ default["eucalyptus"]["network"]["disable-tunneling"] = "Y"
 default["eucalyptus"]["cc"]["port"] = "8774"
 default["eucalyptus"]["cc"]["scheduling-policy"] = "ROUNDROBIN"
 default["eucalyptus"]["cc"]["max-instances-per-cc"] = "128"
+default["eucalyptus"]["cc"]["native"] = false
 
 ## Storage
 default["eucalyptus"]["storage"]["emc"]["navicli-url"] = "http://mirror.eucalyptus-systems.com/mirrors/emc/NaviCLI-Linux-64-latest.rpm"

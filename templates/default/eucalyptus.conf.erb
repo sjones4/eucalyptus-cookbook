@@ -1,7 +1,7 @@
 EUCALYPTUS="<%= node["eucalyptus"]["home-directory"] %>"
 LOGLEVEL="<%= node["eucalyptus"]["log-level"] %>"
 EUCA_USER="<%= node["eucalyptus"]["user"] %>"
-CLOUD_OPTS="<%= node["eucalyptus"]["cloud-opts"] %>"
+CLOUD_OPTS="<%= node["eucalyptus"]["cloud-opts"] %><%= " -Dcom.eucalyptus.cluster.service=default" if not node["eucalyptus"]["cc"]["native"] and node["eucalyptus"]["install-type"] == "sources" %>"
 CC_PORT="<%= node["eucalyptus"]["cc"]["port"] %>"
 SCHEDPOLICY="<%= node["eucalyptus"]["cc"]["scheduling-policy"] %>"
 <% if node["eucalyptus"]["nodes"] -%>
