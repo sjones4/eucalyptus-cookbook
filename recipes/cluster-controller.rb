@@ -20,18 +20,18 @@
 
 include_recipe "eucalyptus::default"
 
-clustercontrollerservice = "service[eucalyptus-cluster]"
-
 ## Install binaries for the CC
 if node["eucalyptus"]["install-type"] == "packages"
   yum_package "eucalyptus-cc" do
     action :upgrade
     options node['eucalyptus']['yum-options']
     flush_cache [:before]
-    notifies :restart, "#{clustercontrollerservice}", :delayed
+    notifies :restart, 'service[eucalyptus-cluster]', :delayed
+    if node["eucalyptus"]["cc"]["native"]
+      notifies :restart, 'service[eucalyptus-cluster-native]', :delayed
+      package_name ["eucalyptus-cc", "eucalyptus-cc-native"]
+    end
   end
-  ### Compat for 3.4.2 and 4.0.0
-  yum_package "dhcp"
 else
   include_recipe "eucalyptus::install-source"
 end
@@ -39,7 +39,10 @@ end
 template "eucalyptus.conf" do
   path   "#{node["eucalyptus"]["home-directory"]}/etc/eucalyptus/eucalyptus.conf"
   source "eucalyptus.conf.erb"
-  notifies :restart, "#{clustercontrollerservice}", :delayed
+  notifies :restart, 'service[eucalyptus-cluster]', :delayed
+  if node["eucalyptus"]["cc"]["native"]
+    notifies :restart, 'service[eucalyptus-cluster-native]', :delayed
+  end
   action :create
 end
 
@@ -55,18 +58,16 @@ ruby_block "Sync keys for CC" do
   only_if { node['eucalyptus']['sync-keys'] }
 end
 
-execute "Ensure bridge modules loaded into the kernel on CC" do
-  command "modprobe bridge"
-end
-
-network_mode = node["eucalyptus"]["network"]["mode"]
-if network_mode == "MANAGED" or network_mode == "MANAGED-NOVLAN"
-  include_recipe "eucalyptus::eucanetd"
-end
-
 service "eucalyptus-cluster" do
   action [ :enable, :start ]
   supports :status => true, :start => true, :stop => true, :restart => true
+end
+
+if node["eucalyptus"]["cc"]["native"]
+  service "eucalyptus-cluster-native" do
+    action [ :enable, :start ]
+    supports :status => true, :start => true, :stop => true, :restart => true
+  end
 end
 
 nc_ips = node['eucalyptus']['topology']['clusters'][cluster_name]['nodes']
