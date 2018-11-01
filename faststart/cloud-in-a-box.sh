@@ -572,13 +572,14 @@ done
 echo "IPADDR="$ciab_ipaddr
 echo ""
 
-echo "Using $wildcard_dns for wildcard dns."
-/usr/bin/ping -c 1 $ciab_ipaddr.$wildcard_dns 1>&4 2>&4
+echo "Using euca.me for wildcard dns."
+CIAB_EC2_ENDPOINT=ec2.${ciab_ipaddr//\./-}.euca.me
+/usr/bin/ping -c 1 $CIAB_EC2_ENDPOINT 1>&4 2>&4
 if [[ $? != 0 ]]; then
-    echo "Cannot resolve $ciab_ipaddr.$wildcard_dns!  We require network
-    connectivity to $wildcard_dns for FastStart service DNS resolution.
-    Please verify your network connectivity is functioning properly and attempt
-    your FastStart install again."
+    echo "Cannot resolve $CIAB_EC2_ENDPOINT!  We require network
+    connectivity to euca.me for FastStart service DNS resolution.
+    Please verify your network connectivity is functioning properly and
+    attempt your FastStart install again."
     exit 1
 fi
 
@@ -742,6 +743,7 @@ else
 fi
 
 # Perform variable interpolation in the proper template.
+sed -i "s/IPADDR.WILDCARD-DNS/${ciab_ipaddr//\./-}.euca.me/g" $chef_template
 sed -i "s/IPADDR/$ciab_ipaddr/g" $chef_template
 sed -i "s/NETMASK/$ciab_netmask/g" $chef_template
 sed -i "s/GATEWAY/$ciab_gateway/g" $chef_template
@@ -753,7 +755,6 @@ sed -i "s/PRIVATEIPS2/$ciab_privateips2/g" $chef_template
 sed -i "s/EXTRASERVICES/$ciab_extraservices/g" $chef_template
 sed -i "s/NIC/$ciab_nic/g" $chef_template
 sed -i "s/NTP/$ciab_ntp/g" $chef_template
-sed -i "s/WILDCARD-DNS/$wildcard_dns/g" $chef_template
 sed -i "s/http:\/\/downloads.eucalyptus.cloud\/software\/eucalyptus\/4.4\/rhel\/7\/x86_64\//http:\/\/downloads.eucalyptus.cloud\/software\/eucalyptus\/snapshot\/5\/rhel\/7\/x86_64\//" $chef_template
 
 if [ "$ciab_bridge_primary" -eq 1 ]; then
