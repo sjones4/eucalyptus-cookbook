@@ -68,7 +68,7 @@ execute "Ensure default image is public" do
 end
 
 execute "Wait for resource availability" do
-  command "euca-describe-availability-zones --region #{node["eucalyptus"]["dns-domain"]} verbose | grep m1.small | grep -v 0000"
+  command "euca-describe-instance-types --region #{node["eucalyptus"]["dns-domain"]} --show-capacity | tail --lines=+2 | grep '%'"
   retries 50
   retry_delay 10
 end
