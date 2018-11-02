@@ -139,7 +139,6 @@ else
   execute "Set OSG providerclient" do
     # for the short term due to errors in CI, run with --debug
     command "#{euctl} --debug objectstorage.providerclient=walrus"
-    only_if "egrep '4.[0-9].[0-9]' #{node['eucalyptus']['home-directory']}/etc/eucalyptus/eucalyptus-version"
     retries 15
     retry_delay 20
     subscribes :start, "service[ufs-eucalyptus-cloud]", :immediately

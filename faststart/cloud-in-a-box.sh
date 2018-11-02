@@ -1,27 +1,52 @@
 #!/bin/bash
 
+function faststart_init()
+{
+
 # Taken from
 # http://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash
 OPTIND=1  # Reset in case getopts has been used previously in the shell.
+LOGFILE='/var/log/euca-install-'`date +%m.%d.%Y-%H.%M.%S`'.log'
 
 # Initialize our own variables:
-cookbooks_url="https://downloads.eucalyptus.cloud/software/eucalyptus/eucalyptus-cookbooks-4.4-5.tgz"
+cookbooks_url="https://downloads.eucalyptus.cloud/software/eucalyptus/eucalyptus-cookbooks-4.4-6.tgz"
 nc_install_only=0
+wildcard_dns="nip.io"
+assume_yes=0
+batch_mode=0
+chef_log_level="info"
 
-function usage
+# Environment configuration, used with batch mode:
+ciab_ntp="${ciab_ntp}"
+ciab_nic="${ciab_nic:-}"
+ciab_ipaddr="${ciab_ipaddr:-}"
+ciab_gateway="${ciab_gateway:-}"
+ciab_netmask="${ciab_netmask:-}"
+ciab_subnet="${ciab_subnet:-}"
+ciab_ips1="${ciab_ips1:-}"
+ciab_ips2="${ciab_ips2:-}"
+
+function usage()
 {
     echo "usage: cloud-in-a-box.sh [[[-u path-to-cookbooks-tgz ] [--nc]] | [-h]]"
 }
 
 while [ "$1" != "" ]; do
     case $1 in
-        -u | --cookbooks-url )           shift
-                                         cookbooks_url=$1
+        -u | --cookbooks-url )  shift
+                                cookbooks_url=$1
                                 ;;
         --nc )                  nc_install_only=1
                                 ;;
         -h | --help )           usage
                                 exit
+                                ;;
+        -y | --assumeyes )      assume_yes=1
+                                ;;
+        --batch )               batch_mode=1
+                                assume_yes=1
+                                ;;
+        --debug )               chef_log_level="debug"
                                 ;;
         * )                     usage
                                 exit 1
@@ -29,17 +54,24 @@ while [ "$1" != "" ]; do
     shift
 done
 
+} # end function faststart_init
+
 ###############################################################################
 # TODOs:
 #   * Put *all* output for *all* commands into log file
 ###############################################################################
+
+# Function for all of faststart, ensures nothing is run until script is
+# complete
+function faststart()
+{
 
 ###############################################################################
 # SECTION 0: FUNCTIONS AND CONSTANTS.
 # 
 ###############################################################################
 
-# Hooray for the coffee cup!
+# Hooray for the tea cup!
 IMGS=(
 "
    ( (     \n\
@@ -49,36 +81,42 @@ IMGS=(
   \      / \n\
    ------  \n
 " "
-   ) )     \n\
+     ) )   \n\
     ( (    \n\
   ........ \n\
   |      |]\n\
   \      / \n\
    ------  \n
 " )
-IMG_REFRESH="0.5"
+IMG_REFRESH="3"
 LINES_PER_IMG=$(( $(echo $IMGS[0] | sed 's/\\n/\n/g' | wc -l) + 1 ))
 
-# Output loop for coffee cup
+# Output loop for tea cup
 function tput_loop() 
 { 
     for((x=0; x < $LINES_PER_IMG; x++)); do tput $1; done; 
 }
 
-# Let's have some coffee!
-function coffee() 
+# Let's have some tea!
+function tea()
 {
     local pid=$1
     IFS='%'
-    tput civis
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do for x in "${IMGS[@]}"; do
-        echo -ne $x
-        tput_loop "cuu1"
-        sleep $IMG_REFRESH
-    done; done
-    tput_loop "cud1"
-    tput cvvis
-}
+    if [ ! -t 3 ] ; then
+        while [ "$(ps ax | awk '{print $1}' | grep $pid)" ]; do
+            sleep 15
+        done
+    else
+        tput civis
+        while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do for x in "${IMGS[@]}"; do
+            echo -ne $x
+            tput_loop "cuu1"
+            sleep $IMG_REFRESH
+        done; done
+        tput_loop "cud1"
+        tput cvvis
+    fi
+}>&3  # no tea for logs
 
 # Check IP inputs to make sure they're valid
 function valid_ip()
@@ -117,6 +155,38 @@ function timer()
     fi
 }
 
+# Read a yes no input, assuming yes when applicable
+function readyesno()
+{
+    if [ $assume_yes -eq 1 ] ; then
+        if [ -z "${!1:-}" ] ; then
+            export $1="Y"
+        fi
+    else
+        read $1
+    fi
+}
+
+# Read input, guessing or using environment when applicable
+function readinput()
+{
+    if [ $batch_mode -eq 1 ] ; then
+        if [ -z "${!1:-}" ] ; then
+            export $1=""
+        fi
+    else
+        read $1
+    fi
+}
+
+function inputerror() {
+    echo "$1"
+    if [ $batch_mode -eq 1 ] ; then
+        echo "Install failed due to missing or invalid configuration"
+        exit 1
+    fi
+}
+
 # Create uuid
 uuid=`uuidgen -t`
 
@@ -136,7 +206,7 @@ echo "virtual machines could terminate."
 echo ""
 
 echo "Continue? [Y/n]"
-read continue_laptop
+readyesno continue_laptop
 if [ "$continue_laptop" = "n" ] || [ "$continue_laptop" = "N" ]
 then 
     echo "Stopped by user request."
@@ -145,8 +215,6 @@ fi
 
 # Invoke timer start.
 t=$(timer)
-
-LOGFILE='/var/log/euca-install-'`date +%m.%d.%Y-%H.%M.%S`'.log'
 
 echo ""
 
@@ -167,9 +235,9 @@ echo ""
 # If the user is following directions, they should be using
 # curl already to fetch the script -- but can't guarantee that.
 echo "[Precheck] Checking curl version"
-curl --version 1>>$LOGFILE
+curl --version
 if [ "$?" != "0" ]; then
-    yum -y install curl 1>>$LOGFILE
+    yum -y install curl
     if [ "$?" != "0" ]; then
         echo "======"
         echo "[FATAL] Could not install curl"
@@ -194,7 +262,7 @@ if [ "$DiskSpace" -lt "100000000" ]; then
     echo "Your free space is: `df -Ph /var | tail -1 | awk '{ print $4}'`"
     echo ""
     echo "Continue? [y/N]"
-    read continue_disk
+    readyesno continue_disk
     if [ "$continue_disk" = "n" ] || [ "$continue_disk" = "N" ] || [ -z "$continue_disk" ]
     then 
         echo "Stopped by user request."
@@ -220,14 +288,12 @@ fi
 
 # Check to see that we're running on CentOS or RHEL and the right version.
 echo "[Precheck] Checking OS"
-cat /etc/redhat-release | egrep 'release.*7.[345]' 1>>$LOGFILE
+cat /etc/redhat-release | egrep 'release.*7.[345]' 1>&4 2>&4
 if [ "$?" != "0" ]; then
     echo "======"
     echo "[FATAL] Operating system not supported"
     echo ""
     echo "Please note: Eucalyptus Faststart only runs on RHEL or CentOS 7.3-7.5"
-    echo "To try Faststart on another platform, consider trying Eucadev:"
-    echo "https://github.com/eucalyptus/eucalyptus-cookbook/blob/master/eucadev.md"
     echo ""
     echo ""
     exit 10
@@ -260,7 +326,7 @@ fi
 
 # Check to see if kvm is supported by the hardware.
 echo "[Precheck] Checking hardware virtualization"
-egrep '^flags.*(vmx|svm)' /proc/cpuinfo 1>>$LOGFILE
+egrep '^flags.*(vmx|svm)' /proc/cpuinfo 1>&4 2>&4
 if [ "$?" != "0" ]; then
     echo "====="
     echo "[FATAL] Processor doesn't support virtualization"
@@ -278,7 +344,7 @@ echo ""
 
 # Check to see if SELinux is set to Permissive.
 echo "[Precheck] Checking SELinux setting"
-grep ^SELINUX=enforcing /etc/selinux/config 1>>$LOGFILE
+grep ^SELINUX=enforcing /etc/selinux/config 1>&4 2>&4
 if [ "$?" = "0" ]; then
     echo "====="
     echo "WARNING: SELinux is Enforcing"
@@ -290,7 +356,7 @@ if [ "$?" = "0" ]; then
     echo "If you answer 'yes' I will change that for you."
     echo "Note that this lowers the level of security."
     echo "Proceed? [y/N]"
-    read use_selinux_permissive_mode
+    readyesno use_selinux_permissive_mode
     echo $use_selinux_permissive_mode | grep -qs '^[Yy]'
     if [ $? = 0 ]; then
         echo "I am changing that for you now."
@@ -407,7 +473,7 @@ if [ "$?" == "0" ]; then
     echo "system."
     echo ""
     echo "Continue anyway? [y/N]"
-    read continue_dhcp
+    readyesno continue_dhcp
     if [ "$continue_dhcp" = "n" ] || [ "$continue_dhcp" = "N" ] || [ -z "$continue_dhcp" ]
     then 
         echo "Stopped by user request."
@@ -485,65 +551,60 @@ echo "they are provided, unless you know that the values are incorrect."
 
 echo ""
 echo "What's the NTP server which we will update time from? ($ciab_ntp_guess)"
-read ciab_ntp
+readinput ciab_ntp
 [[ -z "$ciab_ntp" ]] && ciab_ntp=$ciab_ntp_guess
 echo "NTP="$ciab_ntp
 echo ""
 
 echo ""
 echo "What's the physical NIC that will be used for bridging? ($ciab_nic_guess)"
-read ciab_nic
+readinput ciab_nic
 [[ -z "$ciab_nic" ]] && ciab_nic=$ciab_nic_guess
 echo "NIC="$ciab_nic
 echo ""
 
 echo "What's the IP address of this host? ($ciab_ipaddr_guess)"
 until valid_ip $ciab_ipaddr; do
-    read ciab_ipaddr
+    readinput ciab_ipaddr
     [[ -z "$ciab_ipaddr" ]] && ciab_ipaddr=$ciab_ipaddr_guess
-    valid_ip $ciab_ipaddr || echo "Please provide a valid IP."
+    valid_ip $ciab_ipaddr || inputerror "Please provide a valid IP."
 done
 echo "IPADDR="$ciab_ipaddr
 echo ""
 
-echo "Using euca.me for wildcard dns." >>$LOGFILE
 CIAB_EC2_ENDPOINT=ec2.${ciab_ipaddr//\./-}.euca.me
-/usr/bin/ping -c 1 $CIAB_EC2_ENDPOINT 2>&1 >>$LOGFILE
+/usr/bin/ping -c 1 $CIAB_EC2_ENDPOINT 1>&4 2>&4
 if [[ $? != 0 ]]; then
     echo "Cannot resolve $CIAB_EC2_ENDPOINT!  We require network
     connectivity to euca.me for FastStart service DNS resolution.
-    Please verify your network connectivity is functioning properly and attempt
-    your FastStart install again." 
-    echo "Cannot resolve $CIAB_EC2_ENDPOINT!  We require network
-    connectivity to euca.me for FastStart service DNS resolution.
-    Please verify your network connectivity is functioning properly and attempt
-    your FastStart install again." >>$LOGFILE
+    Please verify your network connectivity is functioning properly and
+    attempt your FastStart install again."
     exit 1
 fi
 
 echo "What's the gateway for this host? ($ciab_gateway_guess)"
 until valid_ip $ciab_gateway; do
-    read ciab_gateway
+    readinput ciab_gateway
     [[ -z "$ciab_gateway" ]] && ciab_gateway=$ciab_gateway_guess
-    valid_ip $ciab_gateway || echo "Please provide a valid IP."
+    valid_ip $ciab_gateway || inputerror "Please provide a valid IP."
 done
 echo "GATEWAY="$ciab_gateway
 echo ""
 
 echo "What's the netmask for this host? ($ciab_netmask_guess)"
 until valid_ip $ciab_netmask; do
-    read ciab_netmask
+    readinput ciab_netmask
     [[ -z "$ciab_netmask" ]] && ciab_netmask=$ciab_netmask_guess
-    valid_ip $ciab_netmask || echo "Please provide a valid IP."
+    valid_ip $ciab_netmask || inputerror "Please provide a valid IP."
 done
 echo "NETMASK="$ciab_netmask
 echo ""
 
 echo "What's the subnet for this host? ($ciab_subnet_guess)"
 until valid_ip $ciab_subnet; do
-    read ciab_subnet
+    readinput ciab_subnet
     [[ -z "$ciab_subnet" ]] && ciab_subnet=$ciab_subnet_guess
-    valid_ip $ciab_subnet || echo "Please provide a valid IP."
+    valid_ip $ciab_subnet || inputerror "Please provide a valid IP."
 done
 echo "SUBNET="$ciab_subnet
 echo ""
@@ -564,20 +625,16 @@ if [ "$nc_install_only" == "0" ]; then
     ipsinrange=0
 
     until (( $ipsinrange==1 )); do
-
-        ciab_ips1='';
-        ciab_ips2='';
-
         echo "What's the first address of your available IP range?"
         until valid_ip $ciab_ips1; do
-            read ciab_ips1
-            valid_ip $ciab_ips1 || echo "Please provide a valid IP."
+            readinput ciab_ips1
+            valid_ip $ciab_ips1 || inputerror "Please provide a valid IP."
         done
 
         echo "What's the last address of your available IP range?"
         until valid_ip $ciab_ips2; do
-            read ciab_ips2
-            valid_ip $ciab_ips2 || echo "Please provide a valid IP."
+            readinput ciab_ips2
+            valid_ip $ciab_ips2 || inputerror "Please provide a valid IP."
         done
 
         ipsub1=$(echo $ciab_ips1 | cut -d'.' -f1-3)
@@ -588,7 +645,7 @@ if [ "$nc_install_only" == "0" ]; then
             iptail1=$(echo $ciab_ips1 | cut -d'.' -f4)
             iptail2=$(echo $ciab_ips2 | cut -d'.' -f4)
             if ! (("$iptail1+9" < "$iptail2")); then
-                echo "Please provide a range of at least 10 IP addresses, with the second IP greater than the first."
+                inputerror "Please provide a range of at least 10 IP addresses, with the second IP greater than the first."
             else
                 publicend=$(($iptail1+(($iptail2-$iptail1)/2)))
                 privatestart=$(($publicend+1))
@@ -602,7 +659,7 @@ if [ "$nc_install_only" == "0" ]; then
                 ipsinrange=1
             fi
         else
-            echo "Subnets for IP range don't match, try again."
+            inputerror "Subnets for IP range don't match, try again."
         fi
 
     done
@@ -611,7 +668,7 @@ if [ "$nc_install_only" == "0" ]; then
     echo "Do you wish to install the optional load balancer and image"
     echo "management services? This add 10-15 minutes to the installation." 
     echo "Install additional services? [Y/n]"
-    read continue_services
+    readyesno continue_services
     if [ "$continue_services" = "n" ] || [ "$continue_services" = "N" ]
     then 
         echo "OK, additional services will not be installed."
@@ -636,7 +693,7 @@ if [ "$?" != "0" ]; then
     echo "[INFO] Chef not found. Installing Chef Client"
     echo ""
     echo ""
-    curl -L https://omnitruck.chef.io/install.sh | bash -s -- -P chefdk -v 2.5 1>>$LOGFILE
+    curl -L https://omnitruck.chef.io/install.sh | bash -s -- -P chefdk -v 2.5 1>&4 2>&4
     if [ "$?" != "0" ]; then
         echo "====="
         echo "[FATAL] Chef install failed!"
@@ -650,12 +707,12 @@ echo ""
 
 echo "[Chef] Removing old Chef templates"
 # Get rid of old Chef stuff lying about.
-rm -rf /var/chef/* 1>>$LOGFILE
+rm -rf /var/chef/* &>/dev/null
 
-echo "[Chef] Downloading necessary cookbooks"
-echo "[Chef] Downloading necessary cookbooks from URL: $cookbooks_url" >> $LOGFILE
+echo "[Chef] Downloading necessary cookbooks from URL:"
+echo "$cookbooks_url"
 # Grab cookbooks from git
-yum install -y git 1>>$LOGFILE
+yum install -y git 1>&4 2>&4
 if [ "$?" != "0" ]; then
         echo "====="
         echo "[FATAL] Failed to install git!"
@@ -665,14 +722,13 @@ if [ "$?" != "0" ]; then
 fi
 if [ -z "${cookbooks_url}" ] || [ "${cookbooks_url}" == "none" ] ; then
   echo "[Chef] Running \"berks package\" to bundle all dependencies"
-  echo "[Chef] Running \"berks package\" to bundle all dependencies" >> $LOGFILE
-  berks package cookbooks.tgz 1>>$LOGFILE 2>&1
+  berks package cookbooks.tgz 1>&4 2>&4
 fi
 rm -rf cookbooks
 if [ ! -z "${cookbooks_url}" ] && [ "${cookbooks_url}" != "none" ] ; then
     curl $cookbooks_url > cookbooks.tgz
 fi
-tar zxfv cookbooks.tgz
+tar xzvf cookbooks.tgz 1>&4
 
 # Copy the templates to the local directory
 cp -f cookbooks/eucalyptus/faststart/ciab-template.json ciab.json
@@ -729,16 +785,16 @@ echo "  tail -f $LOGFILE"
 if [ "$nc_install_only" == "0" ]; then
     if [ "$ciab_extraservices" == "true" ]; then
         echo ""
-        echo "Your cloud-in-a-box should be installed in 30-45 minutes. Go have a cup of coffee!"
+        echo "Your cloud-in-a-box should be installed in 30-45 minutes. Go have a cup of tea!"
         echo ""
     else
         echo ""
-        echo "Your cloud-in-a-box should be installed in 15-20 minutes. Go have a cup of coffee!"
+        echo "Your cloud-in-a-box should be installed in 15-20 minutes. Go have a cup of tea!"
         echo ""
     fi
 else
     echo ""
-    echo "Your node controller should be installed in a few minutes. Go have a cup of coffee!"
+    echo "Your node controller should be installed in a few minutes. Go have a cup of tea!"
     echo ""
 fi
 
@@ -756,8 +812,10 @@ echo ""
 echo "  tail -f $LOGFILE"
 echo ""
 echo "[Yum Update] Package update in progress..."
-yum -y update
-if [ "$?" != "0" ]; then
+(yum -y update && echo "Phase 0 success" > faststart-successful-phase0.log) 1>&4 2>&4 &
+tea $!
+
+if [[ ! -f faststart-successful-phase0.log ]]; then
     echo "====="
     echo "[FATAL] Yum update failed!"
     echo ""
@@ -765,6 +823,7 @@ if [ "$?" != "0" ]; then
     echo "may also have some details related to the same."
     exit 24
 fi
+echo "[Yum Update] Full update of the OS completed."
 
 #
 # OK, THIS IS THE BIG STEP!  Install whichever chef template we're going with here.
@@ -778,8 +837,16 @@ fi
 curdir=`pwd`
 jsonpath="$curdir/$chef_template"
 # Execute phase 1 which adds only the cloud-controller recipe to the run_list
-(chef-client -z -r cookbooks.tgz -j "$jsonpath" -o $runlistitems 1>>$LOGFILE && echo "Phase 1 success" > faststart-successful-phase1.log) &
-coffee $!
+(chef-client --no-color --local-mode \
+             --runlist cookbooks.tgz \
+             --json-attributes "$jsonpath" \
+             --log_level $chef_log_level \
+             --override-runlist $runlistitems \
+ && echo "Phase 1 success" > faststart-successful-phase1.log) 1>&4 2>&4 &
+
+echo ""
+echo "Phase 0 (OS) completed successfully...getting a 2nd cup of tea and moving on to phase 1 (CLC)."
+tea $!
 
 if [[ ! -f faststart-successful-phase1.log ]]; then
     echo "[FATAL] Eucalyptus installation failed"
@@ -795,7 +862,7 @@ if [[ ! -f faststart-successful-phase1.log ]]; then
     echo ""
     exit 99
   else
-    echo "Phase 1 (CLC) installed successfully...getting a 2nd cup of coffee and moving on to phase 2 (main cloud components)."
+    echo "Phase 1 (CLC) completed successfully...getting a 3rd cup of tea and moving on to phase 2 (main cloud components)."
 fi
 
 # Add all other recipes to the run_list and execute phase 2
@@ -810,8 +877,13 @@ if [ "$nc_install_only" -eq 0 ]; then
   runlistitems="$runlistitems,eucalyptus::configure"
 fi
 
-(chef-client -z -r cookbooks.tgz -j "$jsonpath" -o "$runlistitems" 1>>$LOGFILE && echo "Phase 2 success" > faststart-successful-phase2.log) &
-coffee $!
+(chef-client --no-color --local-mode \
+             --runlist cookbooks.tgz \
+             --json-attributes "$jsonpath" \
+             --log_level $chef_log_level \
+             --override-runlist "$runlistitems" \
+ && echo "Phase 2 success" > faststart-successful-phase2.log) 1>&4 2>&4 &
+tea $!
 
 if [[ ! -f faststart-successful-phase2.log ]]; then
     echo "[FATAL] Eucalyptus installation failed"
@@ -827,7 +899,7 @@ if [[ ! -f faststart-successful-phase2.log ]]; then
     echo ""
     exit 99
   else
-    echo "Phase 2 installed successfully...yes, in fact having that 3rd cup of coffee and moving on to phase 3 (create first resources)."
+    echo "Phase 2 completed successfully...yes, in fact having that final cup of tea and moving on to phase 3 (create first resources)."
 fi
 
 # add create first resources as a last item
@@ -836,8 +908,13 @@ if [ "$nc_install_only" -eq 0 ]; then
   runlistitems="eucalyptus::create-first-resources"
 fi
 
-(chef-client -z -r cookbooks.tgz -j "$jsonpath" -o $runlistitems 1>>$LOGFILE && echo "Phase 3 success" > faststart-successful-phase3.log) &
-coffee $!
+(sleep 60 && chef-client --no-color --local-mode \
+             --runlist cookbooks.tgz \
+             --json-attributes "$jsonpath" \
+             --log_level $chef_log_level \
+             --override-runlist $runlistitems \
+ && echo "Phase 3 success" > faststart-successful-phase3.log) 1>&4 2>&4 &
+tea $!
 
 if [[ ! -f faststart-successful-phase3.log ]]; then
     echo "[FATAL] Eucalyptus installation failed"
@@ -852,6 +929,8 @@ if [[ ! -f faststart-successful-phase3.log ]]; then
     echo "Or find us on IRC at irc.freenode.net, on the #eucalyptus channel."
     echo ""
     exit 99
+  else
+    echo "Phase 3 completed successfully."
 fi
 
 
@@ -974,3 +1053,15 @@ else
 fi
 
 exit 0
+
+} # end function faststart
+
+faststart_init "$@"
+exec 3>&1
+exec 4>"${LOGFILE}"
+if [ $batch_mode -eq 1 ] ; then
+  faststart <&0- 2>&1 | tee /dev/fd/4  # no stdin
+else
+  faststart | tee /dev/fd/4
+fi
+
