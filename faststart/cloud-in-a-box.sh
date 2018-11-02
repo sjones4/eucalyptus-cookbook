@@ -9,7 +9,7 @@ OPTIND=1  # Reset in case getopts has been used previously in the shell.
 LOGFILE='/var/log/euca-install-'`date +%m.%d.%Y-%H.%M.%S`'.log'
 
 # Initialize our own variables:
-cookbooks_url="https://downloads.eucalyptus.cloud/software/eucalyptus/eucalyptus-cookbooks-4.4-5.tgz"
+cookbooks_url="https://downloads.eucalyptus.cloud/software/eucalyptus/eucalyptus-cookbooks-4.4-6.tgz"
 nc_install_only=0
 wildcard_dns="nip.io"
 assume_yes=0
@@ -572,7 +572,6 @@ done
 echo "IPADDR="$ciab_ipaddr
 echo ""
 
-echo "Using euca.me for wildcard dns."
 CIAB_EC2_ENDPOINT=ec2.${ciab_ipaddr//\./-}.euca.me
 /usr/bin/ping -c 1 $CIAB_EC2_ENDPOINT 1>&4 2>&4
 if [[ $? != 0 ]]; then
@@ -910,7 +909,7 @@ if [ "$nc_install_only" -eq 0 ]; then
   runlistitems="eucalyptus::create-first-resources"
 fi
 
-(chef-client --no-color --local-mode \
+(sleep 60 && chef-client --no-color --local-mode \
              --runlist cookbooks.tgz \
              --json-attributes "$jsonpath" \
              --log_level $chef_log_level \
