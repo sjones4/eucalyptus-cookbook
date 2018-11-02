@@ -9,7 +9,7 @@ OPTIND=1  # Reset in case getopts has been used previously in the shell.
 LOGFILE='/var/log/euca-install-'`date +%m.%d.%Y-%H.%M.%S`'.log'
 
 # Initialize our own variables:
-cookbooks_url="https://downloads.eucalyptus.cloud/software/eucalyptus/eucalyptus-cookbooks-4.4-6.tgz"
+cookbooks_url="https://downloads.eucalyptus.cloud/software/eucalyptus/eucalyptus-cookbooks-4.4-7.tgz"
 nc_install_only=0
 wildcard_dns="nip.io"
 assume_yes=0
