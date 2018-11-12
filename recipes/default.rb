@@ -129,12 +129,12 @@ end
 
 remote_file "/tmp/epel-release.rpm" do
   source node["eucalyptus"]["epel-rpm"]
-  not_if "rpm -qa | grep 'epel-release'"
+  not_if "rpm -qa | grep 'epel-release' || yum repolist | grep fedora"
 end
 
 execute 'yum install -y *epel*.rpm' do
   cwd '/tmp'
-  not_if "yum repolist | grep epel"
+  not_if "yum repolist | grep epel || yum repolist | grep fedora"
 end
 
 execute "ssh-keygen -f /root/.ssh/id_rsa -P ''" do
