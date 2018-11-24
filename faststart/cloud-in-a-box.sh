@@ -288,12 +288,12 @@ fi
 
 # Check to see that we're running on CentOS or RHEL and the right version.
 echo "[Precheck] Checking OS"
-cat /etc/redhat-release | egrep 'release.*7.[345]' 1>&4 2>&4
+cat /etc/fedora-release | grep 'Fedora release 29' 1>&4 2>&4
 if [ "$?" != "0" ]; then
     echo "======"
     echo "[FATAL] Operating system not supported"
     echo ""
-    echo "Please note: Eucalyptus Faststart only runs on RHEL or CentOS 7.3-7.5"
+    echo "Please note: Eucalyptus Fedora Faststart only runs on Fedora 29"
     echo ""
     echo ""
     exit 10
@@ -309,17 +309,6 @@ if [ "$?" == "0" ]; then
     echo "[FATAL] PackageKit detected"
     echo ""
     echo "The presence of PackageKit indicates that you have installed a Desktop environment."
-    echo "Please run Faststart on a minimal OS without a Desktop environment installed."
-    exit 12
-fi
-
-# Check to see if NetworkManager is enabled. If it is, abort and advise.
-rpm -q NetworkManager
-if [ "$?" == "0" ]; then
-    echo "====="
-    echo "[FATAL] NetworkManager detected"
-    echo ""
-    echo "The presence of NetworkManager indicates that you have installed a Desktop environment."
     echo "Please run Faststart on a minimal OS without a Desktop environment installed."
     exit 12
 fi
@@ -530,7 +519,7 @@ if [ "$ciab_netmask_guess" == "" ]; then
 fi
 
 ciab_subnet_guess=`ipcalc -n $ciab_ipaddr_guess $ciab_netmask_guess | cut -d'=' -f2`
-ciab_ntp_guess=`gawk '/^server / {print $2}' /etc/chrony.conf | head -1`
+ciab_ntp_guess=`gawk '/^(server|pool) / {print $2}' /etc/chrony.conf | head -1`
 
 echo "====="
 echo ""
@@ -730,6 +719,10 @@ if [ ! -z "${cookbooks_url}" ] && [ "${cookbooks_url}" != "none" ] ; then
 fi
 tar xzvf cookbooks.tgz 1>&4
 
+echo "[Chef] Patching eucalyptus cookbook for Fedora"
+# Remove epel setup not relevant for Fedora [TODO remove when cookbook updated]
+sed --in-place '130,139d' cookbooks/eucalyptus/recipes/default.rb
+
 # Copy the templates to the local directory
 cp -f cookbooks/eucalyptus/faststart/ciab-template.json ciab.json
 cp -f cookbooks/eucalyptus/faststart/node-template.json node.json
@@ -813,6 +806,7 @@ echo ""
 echo "  tail -f $LOGFILE"
 echo ""
 echo "[Yum Update] Package update in progress..."
+(dnf install --assumeyes iptables network-scripts perl-HTTP-Tiny yum && systemctl enable network) 1>&4 2>&4
 (yum -y update && echo "Phase 0 success" > faststart-successful-phase0.log) 1>&4 2>&4 &
 tea $!
 
