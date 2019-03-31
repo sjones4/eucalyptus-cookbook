@@ -754,8 +754,8 @@ sed -i "s/PRIVATEIPS2/$ciab_privateips2/g" $chef_template
 sed -i "s/EXTRASERVICES/$ciab_extraservices/g" $chef_template
 sed -i "s/NIC/$ciab_nic/g" $chef_template
 sed -i "s/NTP/$ciab_ntp/g" $chef_template
-sed -i "s/http:\/\/downloads.eucalyptus.cloud\/software\/eucalyptus\/4.4\/rhel\/7\/x86_64\//http:\/\/downloads.eucalyptus.cloud\/software\/eucalyptus\/snapshot\/5\/rhel\/7\/x86_64\//" $chef_template
-
+sed -i "s/http:\/\/downloads.eucalyptus.cloud\/software\/eucalyptus\/4.4\/rhel\/7\/x86_64\//http:\/\/192.168.111.3\/eucalyptus-repos\/eucalyptus-snapshot-staging-5\//" $chef_template
+                                                                                            
 if [ "$ciab_bridge_primary" -eq 1 ]; then
     echo ""
     echo "Binding Eucalyptus to device br0"
