@@ -313,17 +313,6 @@ if [ "$?" == "0" ]; then
     exit 12
 fi
 
-# Check to see if NetworkManager is enabled. If it is, abort and advise.
-rpm -q NetworkManager
-if [ "$?" == "0" ]; then
-    echo "====="
-    echo "[FATAL] NetworkManager detected"
-    echo ""
-    echo "The presence of NetworkManager indicates that you have installed a Desktop environment."
-    echo "Please run Faststart on a minimal OS without a Desktop environment installed."
-    exit 12
-fi
-
 # Check to see if kvm is supported by the hardware.
 echo "[Precheck] Checking hardware virtualization"
 egrep '^flags.*(vmx|svm)' /proc/cpuinfo 1>&4 2>&4
