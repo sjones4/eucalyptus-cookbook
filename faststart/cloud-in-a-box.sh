@@ -9,7 +9,7 @@ OPTIND=1  # Reset in case getopts has been used previously in the shell.
 LOGFILE='/var/log/euca-install-'`date +%m.%d.%Y-%H.%M.%S`'.log'
 
 # Initialize our own variables:
-cookbooks_url="https://downloads.eucalyptus.cloud/software/eucalyptus/eucalyptus-cookbooks-4.4-5.tgz"
+cookbooks_url="https://downloads.eucalyptus.cloud/software/eucalyptus/eucalyptus-cookbooks-4.4-7.tgz"
 nc_install_only=0
 wildcard_dns="nip.io"
 assume_yes=0
@@ -754,6 +754,7 @@ sed -i "s/EXTRASERVICES/$ciab_extraservices/g" $chef_template
 sed -i "s/NIC/$ciab_nic/g" $chef_template
 sed -i "s/NTP/$ciab_ntp/g" $chef_template
 sed -i "s/WILDCARD-DNS/$wildcard_dns/g" $chef_template
+sed -i "s/http:\/\/downloads.eucalyptus.cloud\/software\/eucalyptus\/4.4\/rhel\/7\/x86_64\//http:\/\/downloads.eucalyptus.cloud\/software\/eucalyptus\/snapshot\/5\/rhel\/7\/x86_64\//" $chef_template
 
 if [ "$ciab_bridge_primary" -eq 1 ]; then
     echo ""
@@ -908,7 +909,7 @@ if [ "$nc_install_only" -eq 0 ]; then
   runlistitems="eucalyptus::create-first-resources"
 fi
 
-(chef-client --no-color --local-mode \
+(sleep 60 && chef-client --no-color --local-mode \
              --runlist cookbooks.tgz \
              --json-attributes "$jsonpath" \
              --log_level $chef_log_level \
