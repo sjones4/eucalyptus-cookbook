@@ -313,15 +313,39 @@ if [ "$?" == "0" ]; then
     exit 12
 fi
 
-# Check to see if NetworkManager is enabled. If it is, abort and advise.
-rpm -q NetworkManager
-if [ "$?" == "0" ]; then
+# Check to see if network service is active
+echo "[Precheck] Checking for network service"
+systemctl is-active network.service 1>&4 2>&4
+if [ "$?" != "0" ]; then
     echo "====="
-    echo "[FATAL] NetworkManager detected"
+    echo "WARNING: Network service is not active."
     echo ""
-    echo "The presence of NetworkManager indicates that you have installed a Desktop environment."
-    echo "Please run Faststart on a minimal OS without a Desktop environment installed."
-    exit 12
+    echo "Do you want me to enable the network service?"
+    echo ""
+    echo "If you answer 'yes' I will change that for you."
+    echo "Proceed? [y/N]"
+    readyesno enable_network_service
+    echo $enable_network_service | grep -qs '^[Yy]'
+    if [ $? = 0 ]; then
+        echo "I am changing that for you now."
+        systemctl start network.service 1>&4 2>&4
+        if [ "$?" != "0" ]; then
+          echo "====="
+          echo "[FATAL] Error starting network service"
+          echo ""
+          echo "Network service could not be started, check logs for details"
+          echo "(journalctl -u network.service)."
+          exit 12
+        fi
+        systemctl enable network.service 1>&4 2>&4
+        echo "Done."
+    else
+        echo "Stopped by user request."
+        exit 1
+    fi
+    echo ""
+else
+    echo "[Precheck] OK, network service is active"
 fi
 
 # Check to see if kvm is supported by the hardware.
